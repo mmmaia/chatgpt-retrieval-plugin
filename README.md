@@ -497,8 +497,6 @@ Environment Variables:
 
 Use pgvector to store and search for vectors in a PostgreSQL database. To use pgvector, you will need to set up a PostgreSQL database with the pgvector extension enabled.
 
-- Run the App with the pgvector enabled PostgreSQL docker image: `docker-compose up -d` in [this dir](/examples/docker/pgvector/).
-- The app automatically creates a PostgreSQL table with the specified `PGVECTOR_COLLECTION` environment variable. Optionally, create a custom table and set it as an environment variable (see below).
 - For more information about pgvector, visit the [official repository](https://github.com/pgvector/pgvector).
 
 Environment Variables:
