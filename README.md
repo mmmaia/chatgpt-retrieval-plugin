@@ -508,14 +508,14 @@ Environment Variables:
 | `DATASTORE`          | Yes      | Datastore name, set to `pgvector`                                                          |             |
 | `BEARER_TOKEN`       | Yes      | Secret token                                                                               |             |
 | `OPENAI_API_KEY`     | Yes      | OpenAI API key                                                                             |             |
-| `PGVECTOR_URL`       | Optional | PostgreSQL connection URL with the pgvector extension enabled                              | `localhost` |
+| `PGVECTOR_URL`       | Yes | PostgreSQL connection URL with the pgvector extension enabled                              |  |
 | `PGVECTOR_COLLECTION`| Optional | PostgreSQL table name to store the vector documents                                        | `documents` |
 
 ```bash
 export DATASTORE=pgvector
 export BEARER_TOKEN=<your_bearer_token>
 export OPENAI_API_KEY=<your_openai_api_key>
-export PGVECTOR_URL=<your_pgvector_url>
+export PGVECTOR_URL=<your_postgresql_connection_url>
 export PGVECTOR_COLLECTION=<your_pgvector_collection>
 ```
 

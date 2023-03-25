@@ -1,59 +1,57 @@
 import os
 from typing import Dict, List, Optional
-import asyncio
-from sqlalchemy.ext.asyncio import AsyncSession
+
+from pgvector.sqlalchemy import Vector
+from sqlalchemy import Column, Index, String, create_engine
+from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.future import select
+from sqlalchemy.orm import sessionmaker
+
+from datastore.datastore import DataStore
 from models.models import (
     Document,
     DocumentChunk,
     DocumentMetadataFilter,
-    Query,
     QueryResult,
     QueryWithEmbedding,
 )
-from services.chunks import get_document_chunks
-from services.openai import get_embeddings
-from pgvector.sqlalchemy import Vector
-from sqlalchemy import Column, Index, String, create_engine
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
 
 Base = declarative_base()
 
-# Read the table name from the PGVECTOR_COLLECTION environment variable
-table_name = os.getenv("PGVECTOR_COLLECTION", "vector_documents")
+# Read environment variables for pgvector configuration
+PGVECTOR_COLLECTION = os.getenv("PGVECTOR_COLLECTION", "documents")
+PGVECTOR_URL = os.getenv("PGVECTOR_URL")
 
-class VectorDocument(Base):
-    __tablename__ = table_name
+
+class VectorDocument(DataStore):
+    __tablename__ = PGVECTOR_COLLECTION
 
     id = Column(String, primary_key=True)
     document_id = Column(String)
     text = Column(String)
-    embedding = Column(Vector)
+    embedding = Column(Vector(1536))
 
     # Add a Cosine Distance index for faster querying
     index = Index(
         "vector_cosine_idx",
         embedding,
         postgresql_using="ivfflat",
-        postgresql_ops={"embedding": "vector_cosine_ops"},
+        postgresql_ops={"embedding": "vector_cosine_ops", "lists": "100"},
     )
 
 
 class PgVectorDataStore(DataStore):
     def __init__(self):
         # Read the database URL from the PGVECTOR_URL environment variable
-        db_url = os.getenv("PGVECTOR_URL")
-        if not db_url:
+        if not PGVECTOR_URL:
             raise ValueError("PGVECTOR_URL environment variable is not set")
 
-        self.engine = create_engine(db_url, future=True)
-        Base.metadata.create_all(self.engine)
-        self.session_factory = sessionmaker(self.engine, expire_on_commit=False, class_=AsyncSession)
-    
+        self.engine = create_engine(PGVECTOR_URL)
+        Base.metadata.create_all(bind=self.engine)
+        self.session_factory = sessionmaker(bind=self.engine)
 
     async def _upsert(self, chunks: Dict[str, List[DocumentChunk]]) -> List[str]:
-        async with self.session_factory() as session:
+        with self.session_factory() as session:
             for document_id, document_chunks in chunks.items():
                 for chunk in document_chunks:
                     vector_doc = VectorDocument(
@@ -64,12 +62,12 @@ class PgVectorDataStore(DataStore):
                     )
                     session.merge(vector_doc)
 
-            await session.commit()
+            session.commit()
 
         return list(chunks.keys())
 
     async def _query(self, queries: List[QueryWithEmbedding]) -> List[QueryResult]:
-        async with self.session_factory() as session:
+        with self.session_factory() as session:
             results = []
             for query in queries:
                 query_embedding = query.embedding
@@ -78,7 +76,7 @@ class PgVectorDataStore(DataStore):
                     .order_by(VectorDocument.embedding.cosine_distance(query_embedding))
                     .limit(query.top_k)
                 )
-                matched_documents = await session.execute(stmt)
+                matched_documents = session.execute(stmt)
                 matched_documents = matched_documents.scalars().all()
 
                 # Calculate cosine similarity from cosine distance
@@ -101,7 +99,7 @@ class PgVectorDataStore(DataStore):
         filter: Optional[DocumentMetadataFilter] = None,
         delete_all: Optional[bool] = None,
     ) -> bool:
-        async with self.session_factory() as session:
+        with self.session_factory() as session:
             stmt = select(VectorDocument)
 
             if ids:
@@ -113,12 +111,12 @@ class PgVectorDataStore(DataStore):
             if delete_all:
                 stmt = stmt.where(True)
 
-            result = await session.execute(stmt)
+            result = session.execute(stmt)
             vector_documents = result.scalars().all()
 
             for vector_document in vector_documents:
                 session.delete(vector_document)
 
-            await session.commit()
+            session.commit()
 
         return True
