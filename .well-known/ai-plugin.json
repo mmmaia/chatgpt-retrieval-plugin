@@ -2,7 +2,7 @@
   "schema_version": "v1",
   "name_for_model": "pgvector_retrieval",
   "name_for_human": "PGVector Retrieval Plugin",
-  "description_for_model": "Plugin for searching through OpenAI's content to find answers to questions and retrieve relevant information. Use it whenever a user asks something related to OpenAI and ChatGPT.",
+  "description_for_model": "Plugin for searching through OpenAI's and ChatGPT documentation to find answers to questionsn. Use it whenever a user asks something related to OpenAI or ChatGPT.",
   "description_for_human": "Search through your documents.",
   "auth": {
     "type": "service_http",
