@@ -5,8 +5,11 @@
   "description_for_model": "Plugin for searching through OpenAI's content to find answers to questions and retrieve relevant information. Use it whenever a user asks something related to OpenAI and ChatGPT.",
   "description_for_human": "Search through your documents.",
   "auth": {
-    "type": "user_http",
-    "authorization_type": "bearer"
+    "type": "service_http",
+    "authorization_type": "bearer",
+    "verification_tokens": {
+      "openai": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9"
+    }
   },
   "api": {
     "type": "openapi",
@@ -14,6 +17,6 @@
     "has_user_authentication": false
   },
   "logo_url": "https://pgvector-chatgpt-retrieval-plugin.onrender.com/.well-known/logo.png",
-  "contact_email": "mauricio.maia@gmail.com", 
-  "legal_info_url": "mauricio.maia@gmail.com"
+  "contact_email": "mauricio.maia@pgvector-chatgpt-retrieval-plugin.onrender.com", 
+  "legal_info_url": "https://pgvector-chatgpt-retrieval-plugin.onrender.com/legal"
 }
