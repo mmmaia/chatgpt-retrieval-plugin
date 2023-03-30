@@ -1,10 +1,10 @@
 openapi: 3.0.2
 info:
-  title: Retrieval Plugin API
+  title: PGVector Retrieval Plugin API
   description: A retrieval API for querying and filtering documents based on natural language queries and metadata
   version: 1.0.0
   servers:
-    - url: https://your-app-url.com
+    - url: https://pgvector-chatgpt-retrieval-plugin.onrender.com
 paths:
   /query:
     post:
