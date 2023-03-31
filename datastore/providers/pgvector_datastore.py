@@ -8,6 +8,7 @@ from sqlalchemy.orm import declarative_base, sessionmaker
 
 from datastore.datastore import DataStore
 from models.models import (
+    Document,
     DocumentChunk,
     DocumentChunkMetadata,
     DocumentChunkWithScore,
@@ -16,12 +17,14 @@ from models.models import (
     QueryWithEmbedding,
     Source,
 )
+from services.chunks import get_document_chunks
 
 Base = declarative_base()  # type: Any
 
 # Read environment variables for pgvector configuration
 PGVECTOR_COLLECTION = os.getenv("PGVECTOR_COLLECTION", "documents")
 PGVECTOR_URL = os.getenv("PGVECTOR_URL")
+PGVECTOR_SSL = os.getenv("PGVECTOR_SSL", "true")
 
 
 class VectorDocumentChunk(Base):
@@ -48,11 +51,28 @@ class PgVectorDataStore(DataStore):
         if not PGVECTOR_URL:
             raise ValueError("PGVECTOR_URL environment variable is not set")
 
-        self.engine = create_engine(PGVECTOR_URL, echo=False)
+        # Set the SSL mode to require if PGVECTOR_SSL is set to true
+        connect_args = {}
+        if PGVECTOR_SSL.lower() == "true":
+            connect_args = {"sslmode": "require"}
+
+        self.engine = create_engine(PGVECTOR_URL, connect_args=connect_args)
         if recreate_collection:
             Base.metadata.drop_all(bind=self.engine)
         Base.metadata.create_all(bind=self.engine)
         self.session_factory = sessionmaker(bind=self.engine)
+
+    async def upsert(
+        self, documents: List[Document], chunk_token_size: Optional[int] = None
+    ) -> List[str]:
+        """
+        Takes in a list of documents and upserts them into the database.
+        Return a list of document ids.
+        """
+
+        chunks = get_document_chunks(documents, chunk_token_size)
+
+        return await self._upsert(chunks)
 
     async def _upsert(self, chunks: Dict[str, List[DocumentChunk]]) -> List[str]:
         with self.session_factory() as session:
